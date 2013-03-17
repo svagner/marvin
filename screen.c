@@ -17,20 +17,19 @@ do_resize () {
 }
 #endif
 
-void draw_menubar(WINDOW *menubar, int menu_cnt)
+void draw_menubar(WINDOW *menubar, int menu_cnt, Menu *GMenu)
 {
 	int counter;
 
 	wbkgd(menubar,COLOR_PAIR(2));
 
-	for(counter=0; counter<menu_cnt; counter++)
-	{
-	    wmove(menubar,0,AllMenu[counter]->draw);
-	    waddstr(menubar,AllMenu[counter]->title);
+	do {
+	    wmove(menubar,0,GMenu->draw);
+	    waddstr(menubar,GMenu->title);
 	    wattron(menubar,COLOR_PAIR(3));
-	    HOTKEY_PRINT(AllMenu[counter]->headerkey);
+	    HOTKEY_PRINT(GMenu->headerkey);
 	    wattroff(menubar,COLOR_PAIR(3));
-	};
+	} while((GMenu = GMenu->nextMenu));
 }
 
 void draw_debugbar(WINDOW *debugbar)
@@ -38,19 +37,27 @@ void draw_debugbar(WINDOW *debugbar)
 	wbkgd(debugbar,COLOR_PAIR(2));
 }
 
-WINDOW **draw_menu(int start_col, Menu *Menus)
+WINDOW **draw_menu(int start_col, Menu *GMenu)
 {
 	int i;
 	WINDOW **items;
 	items=(WINDOW **)malloc(9*sizeof(WINDOW *));
 
-	items[0]=newwin(Menus->subcnt+2,19,1,start_col);
+	subMenu *SMenu;
+	SMenu = GMenu->sub;
+
+	items[0]=newwin(GMenu->subcnt+2,19,1,start_col);
 	wbkgd(items[0],COLOR_PAIR(2));
 	box(items[0],ACS_VLINE,ACS_HLINE);
-	for(i=1; i<=(Menus->subcnt)+1; i++)
+	for(i=1; i<=(GMenu->subcnt)+1; i++)
 	    items[i]=subwin(items[0],1,17,1+i,start_col+1);
-	for (i=2;i<(Menus->subcnt)+2;i++)
-		wprintw(items[i-1],Menus->sub[i-2].title,i);
+	i=0;
+	do 
+	{
+	    i++;	
+	    wprintw(items[i],GMenu->sub->title,i);
+	} while ((GMenu->sub=GMenu->sub->nextsubMenu));
+	GMenu->sub=SMenu;
 	wbkgd(items[1],COLOR_PAIR(1));
 	wrefresh(items[0]);
 	return items;
@@ -64,7 +71,7 @@ void delete_menu(WINDOW **items,int count)
 	free(items);
 }
 
-int scroll_menu(WINDOW **items,int count, int current_menu)
+int scroll_menu(WINDOW **items,int count, int current_menu, Menu *GMenu, selectItem *ItemSelect)
 {
 	int key;
 	int selected=0;
@@ -81,37 +88,42 @@ int scroll_menu(WINDOW **items,int count, int current_menu)
 			wbkgd(items[selected+1],COLOR_PAIR(1));
 			wnoutrefresh(items[selected+1]);
 			doupdate();
-		} else if (key==KEY_LEFT && current_menu>0) {
-			    delete_menu(items,count+1);
-			    touchwin(stdscr);
-			    refresh();
-			    items=draw_menu(AllMenu[current_menu-1]->draw, AllMenu[current_menu-1]);
-			    return scroll_menu(items,AllMenu[current_menu-1]->subcnt, current_menu-1);
-		} else if (key==KEY_RIGHT && current_menu<cnt_menu-1) {
+		} else if (key==KEY_LEFT && GMenu->prevMenu) {
 			delete_menu(items,count+1);
 			touchwin(stdscr);
 			refresh();
-			items=draw_menu(AllMenu[current_menu+1]->draw, AllMenu[current_menu+1]);
-			return scroll_menu(items,AllMenu[current_menu+1]->subcnt, current_menu+1);
+			GMenu = GMenu->prevMenu;
+			items=draw_menu(GMenu->draw, GMenu);
+			return scroll_menu(items,GMenu->subcnt, current_menu-1, GMenu, ItemSelect);
+		} else if (key==KEY_RIGHT && GMenu->nextMenu) {
+			delete_menu(items,count+1);
+			touchwin(stdscr);
+			refresh();
+			GMenu = GMenu->nextMenu;
+			items=draw_menu(GMenu->draw, GMenu);
+			return scroll_menu(items,GMenu->subcnt, current_menu+1, GMenu, ItemSelect);
 		} else if (key==ESCAPE) {
 			return -1;
 		} else if (key==ENTER) {
+			ItemSelect->GMenu = GMenu;
 			return selected;
 		}
 	}
 }
 
 int
-init_screen () {
+init_screen (Menu *GMenu) {
 	int key;
 	int res;
 	int counter, current_menu;
 
-	cnt_menu = sizeof(AllMenu)/sizeof(*AllMenu);
+	Menu *GenMenu;
+
+//	cnt_menu = sizeof(AllMenu)/sizeof(*AllMenu);
 	bkgd(COLOR_PAIR(1));
 	menubar=subwin(stdscr,1,0,0,0);
 	messagebar=subwin(stdscr,1,79,23,1);
-	draw_menubar(menubar, cnt_menu);
+	draw_menubar(menubar, cnt_menu, GMenu);
 
 	debugbar=subwin(stdscr,1,0,LINES-1,0);
 	draw_debugbar(debugbar);
@@ -119,36 +131,53 @@ init_screen () {
 	printw("Welcome to Marvin System Management!");
 	move(2,2);
 	printw("Press F[1-12] to open the menus or ESC for quit.");
-	printw("\nCount menu: %d\nAddress: Amenu %s: 0x%x vs 0x%x.\nCols=%d Lines=%d", cnt_menu, AllMenu[0]->title, AllMenu[0], &AMenu, COLS, LINES);
+//	printw("\nCount menu: %d\nAddress: Amenu %s: 0x%x vs 0x%x.\nCols=%d Lines=%d", cnt_menu, AllMenu[0]->title, AllMenu[0], &AMenu, COLS, LINES);
 	refresh();
 
 	do {
 		int selected_item;
+		selectItem *ItemSelect, *ItemSelectSave;
 		WINDOW **menu_items;
 
+		ItemSelect = malloc(sizeof(selectItem));
 		key=getch();
 		werase(debugbar);
 		wrefresh(debugbar);
-		for(counter=0; counter<cnt_menu; counter++)
+		GenMenu=GMenu;
+		do
 		{
-		    if (key==AllMenu[counter]->funckey || key==BUTTON_ALT) {
-			current_menu=AllMenu[counter]->pos;    
-			menu_items=draw_menu(AllMenu[counter]->draw, AllMenu[counter]);
-			selected_item=scroll_menu(menu_items,AllMenu[counter]->subcnt, current_menu);
+		    if (key==GenMenu->funckey || key==BUTTON_ALT) {
+			current_menu=GenMenu->pos;    
+			menu_items=draw_menu(GenMenu->draw, GenMenu);
+			selected_item=scroll_menu(menu_items,GenMenu->subcnt, current_menu, GenMenu, ItemSelect);
 			delete_menu(menu_items,9);
 			if (selected_item<0)
 				wprintw(debugbar,"You haven't selected any item.");
 			else
 			{
-				wprintw(debugbar,
-						"You have selected menu item %d - %s.",selected_item+1,AllMenu[counter]->sub[selected_item].title);
-				if (AllMenu[counter]->sub[selected_item].defaultAction)
-				    (*AllMenu[counter]->sub[selected_item].defaultAction)();
+
+				//wprintw(debugbar,
+				//		"You have selected menu item %d - %s.",selected_item+1,GenMenu->sub[selected_item].title);
+				ItemSelectSave = ItemSelect->GMenu->sub;
+				do 
+				{
+					if(ItemSelect->GMenu->sub->id==selected_item+1)
+					{
+					    wprintw(debugbar,
+						"You have selected menu item %d - %s.",selected_item+1,ItemSelect->GMenu->sub->title);
+					    break;
+					};
+//				if (AllMenu[counter]->sub[selected_item].defaultAction)
+//				    (*AllMenu[counter]->sub[selected_item].defaultAction)();
+				} while ((ItemSelect->GMenu->sub=ItemSelect->GMenu->sub->nextsubMenu));
+				ItemSelect->GMenu->sub = ItemSelectSave;
 			}
 			touchwin(stdscr);
 			refresh();
 		    };
-		};
+		} while ((GenMenu=GenMenu->nextMenu));
+		free(ItemSelect);    
+		
 	} while (key!=KEY_Q);
 
 	delwin(menubar);
@@ -160,13 +189,12 @@ init_screen () {
 void 
 check_term_size ()
 {
-if (COLS < 79 || LINES < 27)
+    if (COLS < 79 || LINES < 27)
 	exit(1);
-//	FATAL("The terminal is too small after resizeing.");
 }
 
 void
-iface_resize()
+iface_resize(Menu *GMenu)
 {
 	check_term_size();
 	endwin ();
@@ -177,7 +205,7 @@ iface_resize()
 	wrefresh(menubar);
 	menubar=subwin(stdscr,1,0,0,0);
 	messagebar=subwin(stdscr,1,79,23,1);
-	draw_menubar(menubar, cnt_menu);
+	draw_menubar(menubar, cnt_menu, GMenu);
 	werase(messagebar);
 	wrefresh(messagebar);
 	werase(debugbar);
