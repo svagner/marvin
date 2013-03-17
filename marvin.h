@@ -83,6 +83,7 @@ void iface_resize();
 
 /* End static init	*/
 int cnt_menu;	/* Counter of general menu    */
+ModSysInfo *modlist;
 
 void init_curses();
 void draw_menubar(WINDOW *, int, Menu*);
@@ -93,5 +94,6 @@ int scroll_menu(WINDOW **items,int, int, Menu*, selectItem*);
 void get_current_winsize(int *x, int *y);
 int init_modules();
 int init_screen();
+void ModuleList(ModSysInfo *);
 
 #endif

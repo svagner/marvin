@@ -122,15 +122,16 @@ init_screen (Menu *GMenu) {
 //	cnt_menu = sizeof(AllMenu)/sizeof(*AllMenu);
 	bkgd(COLOR_PAIR(1));
 	menubar=subwin(stdscr,1,0,0,0);
-	messagebar=subwin(stdscr,1,79,23,1);
+	//messagebar=subwin(stdscr,1,79,23,1);
+	messagebar=subwin(stdscr,40,179,2,2);
 	draw_menubar(menubar, cnt_menu, GMenu);
 
 	debugbar=subwin(stdscr,1,0,LINES-1,0);
 	draw_debugbar(debugbar);
 	move(1,2);
-	printw("Welcome to Marvin System Management!");
-	move(2,2);
-	printw("Press F[1-12] to open the menus or ESC for quit.");
+	printw("Marvin System Management");
+	//move(2,2);
+	wprintw(messagebar,"Press F[1-12] to open the menus or ESC for quit.");
 //	printw("\nCount menu: %d\nAddress: Amenu %s: 0x%x vs 0x%x.\nCols=%d Lines=%d", cnt_menu, AllMenu[0]->title, AllMenu[0], &AMenu, COLS, LINES);
 	refresh();
 
@@ -163,6 +164,7 @@ init_screen (Menu *GMenu) {
 				{
 					if(ItemSelect->GMenu->sub->id==selected_item+1)
 					{
+					    (*ItemSelect->GMenu->sub->defaultAction)();	
 					    wprintw(debugbar,
 						"You have selected menu item %d - %s.",selected_item+1,ItemSelect->GMenu->sub->title);
 					    break;

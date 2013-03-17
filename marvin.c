@@ -12,6 +12,30 @@ void init_curses()
 	keypad(stdscr,TRUE);
 }
 
+void
+ModuleList()
+{
+	ModSysInfo *modlist_bak;
+	modlist_bak = modlist;
+	werase(messagebar);
+
+	wprintw(messagebar, "\n\tId\t\tName\t\tAddress");
+	mvwhline(messagebar,2, 2, 0, 10); 
+	do
+	{
+	    nl();
+	    wprintw(messagebar, "\n\t%d\t\t%s\t0x%x",modlist->id,modlist->name,modlist->addr);
+	} while ((modlist=modlist->next));
+	modlist=modlist_bak;
+	box(messagebar,0,0);
+	wrefresh(messagebar);
+/*	waddch(messagebar, ACS_ULCORNER);
+	waddch(messagebar, ACS_HLINE);
+	waddch(messagebar, ACS_URCORNER);*/
+	touchwin(stdscr);
+	refresh();
+};
+
 int
 init_modules(ModSysInfo *modlist, Menu *GMenu) {
 	struct dirent *entry;
@@ -88,10 +112,14 @@ int main()
 #ifdef SIGWINCH
 	signal(SIGWINCH, sig_winch);
 #endif
+	modlist = malloc(sizeof(ModSysInfo));
+
 	subMenu *SMenu;
+/* init default menu */	
 	SMenu = malloc(sizeof(subMenu));
 	SMenu->id = 1;
 	strcpy(SMenu->title, "Modules");
+	SMenu->defaultAction = (void*)ModuleList;
 
 	Menu *GMenu;
 	GMenu = malloc(sizeof(Menu));
@@ -105,8 +133,7 @@ int main()
 	GMenu->nextMenu = NULL;
 	GMenu->prevMenu = NULL;
 
-	ModSysInfo *modlist;
-	modlist = malloc(sizeof(ModSysInfo));
+
 	init_curses();
 	if((res=init_modules(modlist,GMenu))<0)
 		return 1;
