@@ -1,5 +1,5 @@
 #include "marvin.h" 
-		
+
 void init_curses()
 {
 	initscr();
@@ -7,31 +7,34 @@ void init_curses()
 	init_pair(1,COLOR_WHITE,COLOR_BLUE);
 	init_pair(2,COLOR_BLUE,COLOR_WHITE);
 	init_pair(3,COLOR_RED,COLOR_WHITE);
+	init_pair(4,COLOR_WHITE,COLOR_GREEN);
 	curs_set(0);
 	noecho();
 	keypad(stdscr,TRUE);
-}
+};
 
 void
 ModuleList()
 {
+	WINDOW *header, *win;
 	ModSysInfo *modlist_bak;
 	modlist_bak = modlist;
 	werase(messagebar);
 
-	wprintw(messagebar, "\n\tId\t\tName\t\tAddress");
-	mvwhline(messagebar,2, 2, 0, 10); 
+	header=subwin(messagebar,3,COLS/2,2,2);
+	wbkgd(header,COLOR_PAIR(4));
+
+	wprintw(header, "\n Id%30s%40s", "Name", "Address");
+	box(header,0,0);
+	win=subwin(messagebar,LINES-20,COLS/2,5,2);
+
 	do
 	{
-	    nl();
-	    wprintw(messagebar, "\n\t%d\t\t%s\t0x%x",modlist->id,modlist->name,modlist->addr);
+	    wprintw(win, "\n %2d%30s%#40x",modlist->id,modlist->name,modlist->addr);
 	} while ((modlist=modlist->next));
+	box(win,0,0);
 	modlist=modlist_bak;
-	box(messagebar,0,0);
 	wrefresh(messagebar);
-/*	waddch(messagebar, ACS_ULCORNER);
-	waddch(messagebar, ACS_HLINE);
-	waddch(messagebar, ACS_URCORNER);*/
 	touchwin(stdscr);
 	refresh();
 };

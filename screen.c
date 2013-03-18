@@ -123,7 +123,7 @@ init_screen (Menu *GMenu) {
 	bkgd(COLOR_PAIR(1));
 	menubar=subwin(stdscr,1,0,0,0);
 	//messagebar=subwin(stdscr,1,79,23,1);
-	messagebar=subwin(stdscr,40,179,2,2);
+	messagebar=subwin(stdscr,40,LINES*2,2,2);
 	draw_menubar(menubar, cnt_menu, GMenu);
 
 	debugbar=subwin(stdscr,1,0,LINES-1,0);
