@@ -53,7 +53,7 @@ WINDOW *menubar, *messagebar, *debugbar;
 typedef struct _submenu {
 	int id;				/* Identification	    */
 	char title[MAXNAMELEN];		/* Title for sub menu	    */
-	void (*defaultAction)();	/* Function for action	    */
+	void (*defaultAction)(WINDOW *messagebar);	/* Function for action	    */
 	struct _submenu *nextsubMenu;
 	struct _submenu *prevsubMenu;
 } subMenu;				/* Sub menus type desc	    */

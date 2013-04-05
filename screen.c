@@ -164,7 +164,7 @@ init_screen (Menu *GMenu) {
 				{
 					if(ItemSelect->GMenu->sub->id==selected_item+1)
 					{
-					    (*ItemSelect->GMenu->sub->defaultAction)();	
+					    (*ItemSelect->GMenu->sub->defaultAction)(messagebar);	
 					    wprintw(debugbar,
 						"You have selected menu item %d - %s.",selected_item+1,ItemSelect->GMenu->sub->title);
 					    break;

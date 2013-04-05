@@ -13,11 +13,11 @@ init_module () {
 	subMenu *SMenu;
 	SMenu = malloc(sizeof(subMenu));
 	SMenu->id = 1;
-	strcpy(SMenu->title, "Monitoring");
+	strcpy(SMenu->title, "Top");
 	Menu *GMenu;
 	GMenu = malloc(sizeof(Menu));
 	GMenu->pos = 0;
-	strcpy(GMenu->title,"Top");
+	strcpy(GMenu->title,"Monitoring");
 	strcpy(GMenu->headerkey,"F3");
 	GMenu->funckey = KEY_F(3);
 	GMenu->draw = 40;

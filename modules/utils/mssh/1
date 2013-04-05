@@ -1,0 +1,133 @@
+#include "../../../marvin.h"
+#include "menu.h"
+
+void init_module ();
+void openInterface();
+void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
+
+struct _module Mod = {
+	"SSH Multi Access module",
+	NULL,
+	init_module,
+};
+
+void
+init_module () {
+	subMenu *SMenu;
+	SMenu = malloc(sizeof(subMenu));
+	SMenu->id = 1;
+	strcpy(SMenu->title, "SSH Multi");
+	SMenu->defaultAction = openInterface;
+	Menu *GMenu;
+	GMenu = malloc(sizeof(Menu));
+	GMenu->pos = 0;
+	strcpy(GMenu->title,"Utils");
+	strcpy(GMenu->headerkey,"F4");
+	GMenu->funckey = KEY_F(4);
+	GMenu->draw = 60;
+	GMenu->subcnt = 1;
+	GMenu->sub = SMenu;
+	GMenu->nextMenu = NULL;
+	Mod.ModMenu = GMenu;
+}
+
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#define CTRLD	4
+
+char *choices[] = {
+	"Choice 1",
+	"Choice 2",
+	"Choice 3",
+	"Choice 4",
+	"Choice 5",
+	"Choice 6",
+	"Choice 7",
+	"Exit",
+};
+
+void
+openInterface(WINDOW *messagebar) {
+	ITEM **my_items;
+	int c;		
+	MENU *my_menu;
+	int n_choices, i;
+	werase(messagebar);
+
+	/* Initialize curses */
+	/* Create items */
+	n_choices = ARRAY_SIZE(choices);
+	my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
+	for(i = 0; i < n_choices; ++i)
+		my_items[i] = new_item(choices[i], choices[i]);
+
+	/* Crate menu */
+	my_menu = new_menu((ITEM **)my_items);
+
+	/* Create the window to be associated with the menu */
+	keypad(messagebar, TRUE);
+
+	/* Set main window and sub window */
+	set_menu_win(my_menu, messagebar);
+	set_menu_sub(my_menu, derwin(messagebar, 6, 38, 3, 1));
+
+	/* Set menu mark to the string " * " */
+	set_menu_mark(my_menu, " * ");
+
+	/* Print a border around the main window and print a title */
+	box(messagebar, 0, 0);
+	print_in_middle(messagebar, 1, 0, 40, "My Menu", COLOR_PAIR(4));
+	mvwaddch(messagebar, 2, 0, ACS_LTEE);
+	mvwhline(messagebar, 2, 1, ACS_HLINE, 38);
+	mvwaddch(messagebar, 2, 39, ACS_RTEE);
+	mvprintw(LINES - 1, 0, "F1 to exit");
+	refresh();
+
+	/* Post the menu */
+	post_menu(my_menu);
+	wrefresh(messagebar);
+	touchwin(stdscr);
+	refresh();
+
+	while((c = wgetch(messagebar)) != KEY_DOWN)
+	{       switch(c)
+		{   case KEY_DOWN:
+			menu_driver(my_menu, REQ_DOWN_ITEM);
+			break;
+			case KEY_UP:
+			menu_driver(my_menu, REQ_UP_ITEM);
+			break;
+		 //   default: break;	
+		}
+		wrefresh(messagebar);
+	}	
+
+	/* Unpost and free all the memory taken up */
+	//unpost_menu(my_menu);
+	//free_menu(my_menu);
+//	for(i = 0; i < n_choices; ++i)
+//		free_item(my_items[i]);
+//	endwin();
+}
+
+void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color)
+{   int length, x, y;
+	float temp;
+
+	if(win == NULL)
+		win = stdscr;
+	getyx(win, y, x);
+	if(startx != 0)
+		x = startx;
+	if(starty != 0)
+		y = starty;
+	if(width == 0)
+		width = 80;
+
+	length = strlen(string);
+	temp = (width - length)/ 2;
+	x = startx + (int)temp;
+	wattron(win, color);
+	mvwprintw(win, y, x, "%s", string);
+	wattroff(win, color);
+	refresh();
+}
