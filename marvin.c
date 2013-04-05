@@ -85,7 +85,7 @@ init_modules(ModSysInfo *modlist, Menu *GMenu) {
 				cnt++;
 				modlist->id = cnt;
 				modlist->name = Mod->name;
-				modlist->addr = Mod;
+				modlist->addr = (u_long)Mod;
 
 				if (Mod->ModMenu)
 				{

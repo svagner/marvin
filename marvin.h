@@ -115,6 +115,6 @@ int scroll_menu(WINDOW **items,int, int, Menu*, selectItem*);
 void get_current_winsize(int *x, int *y);
 int init_modules();
 int init_screen();
-void ModuleList(ModSysInfo *);
+void ModuleList();
 
 #endif
